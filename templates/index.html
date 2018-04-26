@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>go web api demo</title>
+    <script type="text/javascript" src="../assets/jquery.min.js"></script>
+</head>
+<body>
+<div>
+    <form id="myform">
+        <input type="text" id="username" name="username"/>
+        <input type="button" id="btn" onclick="save()" value="提交"><br/>
+        <input type="file" id="uploadFile" name="uploadFile"/>
+        <input type="button" id="btnFile" onclick="uploadFile1()" value="uploads">
+    </form>
+</div>
+<div id="list1"></div>
+<div id="update1"></div>
+
+<script type="text/javascript" language="JavaScript">
+    $(document).ready(function () {
+        list()
+    });
+    function list() {
+        $.ajax({
+            type: "GET",
+            url: "http://127.0.0.1:8000/list",
+            success: function (str) {
+                var resultHtml = '';
+                var datas = JSON.parse(str);
+                var tempDatas = [];
+                for (var i = 0, len = datas.length; i < len; i++) {
+                    tempDatas.push(
+                        `<li id="${datas[i].Id}" style="list-style: none">
+                        ${datas[i].Username}
+                        <input type="button" value="删除"  title=${datas[i].Id} onclick="del(this)"/>
+                        <input type="button" value="查看详情"  title=${datas[i].Id} id=${datas[i].Username} onclick="info(this)"/>
+                        </li>`
+                    );
+                }
+                resultHtml = '<ul>' + tempDatas.join('') + '</ul>';
+                //console.log(resultHtml);
+                $("#list1").append(resultHtml);
+
+            }
+
+        })
+    }
+    function save() {
+        console.log("save");
+        console.log($("#username").val());
+        var username = $("#username").val();
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:8000/add",
+            dataType: "json",
+            contentType: "application/json",
+            data: JSON.stringify({"username": username}),
+            success: function (str) {
+                //console.log(str)
+                //alert(JSON.stringify(str))
+                $("ul").remove();
+                $("#username").val("");
+                list()
+            }
+
+        })
+    }
+    function del(e) {
+        //console.log(e);
+        //console.log($(e));
+        var id1 = e.title;
+        console.log(id1);
+        $("ul").find("#" + id1).remove();
+        //$("#" + id).remove();
+        $.ajax({
+            type: "GET",
+            url: "http://127.0.0.1:8000/del?id="+id1,
+            success: function (str) {
+                //console.log(str)
+                alert(JSON.stringify(str))
+            }
+
+        })
+    }
+    function info(e) {
+        console.log("id: ",e);
+        console.log("id: ",e.title);
+        console.log("name: ",e.id);
+        $("#update1").empty();
+        var id = e.title;
+        var name = e.id;
+        var resultHtml = `
+                        <input type="text" id="${id}-update" value=${name} />
+                        <input type="button" id=${id} value="修改" onclick="update(this)"/>`
+        $("#update1").append(resultHtml);
+    }
+    function update(e) {
+        var id = e.id ;
+        var id1 = e.id + "-update";
+        console.log("e.id: ",e.id);
+        console.log("id: ",id);
+        var text = $("#"+id1).val();
+        console.log(text);
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:8000/update",
+            dataType: "json",
+            contentType: "application/json",
+            data: JSON.stringify({"id":id,"username": text}),
+            success: function (str) {
+                //console.log(str)
+                alert(JSON.stringify(str));
+                $("#update1").empty();
+                $("ul").remove();
+                list()
+            }
+
+        })
+    }
+    function uploadFile1() {
+        console.log("123");
+        var formData = new FormData();
+        console.log($("#uploadFile")[0].files[0]);
+        var tempFile = $("#uploadFile")[0].files[0];
+
+        formData.append("uploadFile",tempFile);
+        formData.append("name",tempFile.name);
+        $.ajax({
+            url : "http://127.0.0.1:8000/uploadFile",
+            type : 'POST',
+            data : formData,
+// 告诉jQuery不要去处理发送的数据
+            processData : false,
+// 告诉jQuery不要去设置Content-Type请求头
+            contentType : false,
+            beforeSend:function(){
+                console.log("正在进行，请稍候");
+            },
+            success : function(responseStr) {
+                if(responseStr.status=="success"){
+                    console.log("成功"+responseStr);
+                }else{
+                    console.log("失败");
+                }
+            },
+            error : function(responseStr) {
+                console.log("error");
+            }
+        });
+    }
+
+</script>
+</body>
+</html>
